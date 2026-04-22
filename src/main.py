@@ -52,8 +52,7 @@ def main() -> None:
 
     # Генерация мира
     print(
-        f"Генерация мира {args.width}x{args.height}, "
-        f"seed={args.seed}..."
+        f"Генерация мира {args.width}x{args.height}, " f"seed={args.seed}..."
     )
     config = GenerationConfig(
         seed=args.seed,
@@ -68,7 +67,7 @@ def main() -> None:
     )
 
     # Запуск окна
-    window = FlatCraftWindow(
+    FlatCraftWindow(
         world=world,
         tile_size=args.tile_size,
     )

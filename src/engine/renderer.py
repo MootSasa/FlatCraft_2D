@@ -18,7 +18,13 @@ import random
 import arcade
 
 from src.engine.camera import GameCamera
-from src.engine.layers import BIOME_COLORS, FALLBACK_MAP, PLACEMENT_RULES, ObjectType
+from src.engine.layers import (
+    BIOME_COLORS,
+    FALLBACK_MAP,
+    PLACEMENT_RULES,
+    ObjectPlacementRule,
+    ObjectType,
+)
 from src.world.models import Biome, Chunk, World
 
 
@@ -69,13 +75,9 @@ class Renderer:
 
             # Ленивое создание спрайтов
             if chunk.surface_sprite_list is None:
-                chunk.surface_sprite_list = self._build_surface_sprites(
-                    chunk
-                )
+                chunk.surface_sprite_list = self._build_surface_sprites(chunk)
             if chunk.object_sprite_list is None:
-                chunk.object_sprite_list = self._build_object_sprites(
-                    chunk
-                )
+                chunk.object_sprite_list = self._build_object_sprites(chunk)
 
         # Сначала поверхность, потом объекты
         for cx, cy in visible:
@@ -95,7 +97,9 @@ class Renderer:
     # Спрайты поверхности
     # ================================================================
 
-    def _build_surface_sprites(self, chunk: Chunk) -> arcade.SpriteList:
+    def _build_surface_sprites(
+        self, chunk: Chunk
+    ) -> arcade.SpriteList[arcade.Sprite]:
         """Создаёт цветные квадратики для чанка.
 
         Каждый тайл - один SpriteSolidColor.
@@ -107,7 +111,7 @@ class Renderer:
             SpriteList с цветными спрайтами.
         """
         cs = self._world.chunk_size
-        sprite_list = arcade.SpriteList()
+        sprite_list: arcade.SpriteList[arcade.Sprite] = arcade.SpriteList()
 
         for ly in range(chunk.tiles.shape[0]):
             for lx in range(chunk.tiles.shape[1]):
@@ -119,15 +123,13 @@ class Renderer:
                 ty = chunk.y * cs + ly
                 cx_px = tx * self.tile_size + self.tile_size / 2.0
                 cy_px = (
-                    (self._world.height - 1 - ty)
-                    * self.tile_size
-                    + self.tile_size / 2.0
-                )
+                    self._world.height - 1 - ty
+                ) * self.tile_size + self.tile_size / 2.0
 
                 sprite = arcade.SpriteSolidColor(
                     width=self.tile_size,
                     height=self.tile_size,
-                    color=color,
+                    color=(*color, 255),
                     center_x=cx_px,
                     center_y=cy_px,
                 )
@@ -139,7 +141,9 @@ class Renderer:
     # Спрайты объектов
     # ================================================================
 
-    def _build_object_sprites(self, chunk: Chunk) -> arcade.SpriteList:
+    def _build_object_sprites(
+        self, chunk: Chunk
+    ) -> arcade.SpriteList[arcade.Sprite]:
         """Создаёт декоративные объекты для чанка.
 
         Размещает объекты по правилам PLACEMENT_RULES.
@@ -158,11 +162,11 @@ class Renderer:
             SpriteList со спрайтами объектов.
         """
         cs = self._world.chunk_size
-        sprite_list = arcade.SpriteList()
+        sprite_list: arcade.SpriteList[arcade.Sprite] = arcade.SpriteList()
         height = self._world.height
 
         # Группируем правила по биому
-        rules_by_biome: dict[Biome, list] = {}
+        rules_by_biome: dict[Biome, list[ObjectPlacementRule]] = {}
         for rule in PLACEMENT_RULES:
             rules_by_biome.setdefault(rule.biome, []).append(rule)
 
@@ -230,9 +234,7 @@ class Renderer:
                     px_w = obj.tile_width * self.tile_size
                     px_h = obj.tile_height * self.tile_size
 
-                    cx_px, cy_px = self._object_position(
-                        tx, ty, obj, height
-                    )
+                    cx_px, cy_px = self._object_position(tx, ty, obj, height)
 
                     sprite = arcade.Sprite(
                         tex,
@@ -312,8 +314,8 @@ class Renderer:
         self,
         tx: int,
         ty: int,
-        rule: "ObjectPlacementRule",  # noqa: F821
-        rules_by_biome: dict[Biome, list],
+        rule: ObjectPlacementRule,
+        rules_by_biome: dict[Biome, list[ObjectPlacementRule]],
     ) -> bool:
         """Можно ли разместить объект якорём в (tx, ty)?
 
@@ -343,9 +345,7 @@ class Renderer:
                 if tile is None:
                     return False
                 if obj not in {
-                    r.object_type for r in rules_by_biome.get(
-                        tile.biome, []
-                    )
+                    r.object_type for r in rules_by_biome.get(tile.biome, [])
                 }:
                     return False
 
@@ -533,9 +533,7 @@ class Renderer:
                 # Перекати-поле
                 r = int(ts * 0.4)
                 cx, cy = w // 2, h // 2
-                draw.ellipse(
-                    [cx - r, cy - r, cx + r, cy + r], fill=color
-                )
+                draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
                 for angle_deg in range(0, 360, 45):
                     rad = math.radians(angle_deg)
                     sx = cx + int(r * math.cos(rad))
@@ -552,23 +550,23 @@ class Renderer:
                 rx = int(ts * 0.4)
                 ry = int(ts * 0.25)
                 cx, cy = w // 2, h // 2 + ts // 8
-                draw.ellipse(
-                    [cx - rx, cy - ry, cx + rx, cy + ry], fill=color
-                )
+                draw.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=color)
                 # Веточки
                 for dx_off in (-ts // 5, 0, ts // 5):
                     draw.rectangle(
-                        [cx + dx_off - 1, cy - ry - ts // 8,
-                         cx + dx_off + 1, cy - ry + 2],
+                        [
+                            cx + dx_off - 1,
+                            cy - ry - ts // 8,
+                            cx + dx_off + 1,
+                            cy - ry + 2,
+                        ],
                         fill=(80, 90, 70, 255),
                     )
             elif label == "bush":
                 # Куст
                 r = int(ts * 0.4)
                 cx, cy = w // 2, h // 2
-                draw.ellipse(
-                    [cx - r, cy - r, cx + r, cy + r], fill=color
-                )
+                draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
             elif label == "grass_tuft":
                 # Широкая трава
                 blade_w = max(ts // 8, 1)
@@ -591,8 +589,7 @@ class Renderer:
                 # Цветок
                 stem_w = max(ts // 8, 1)
                 draw.rectangle(
-                    [w // 2 - stem_w // 2, h // 2,
-                     w // 2 + stem_w // 2, h],
+                    [w // 2 - stem_w // 2, h // 2, w // 2 + stem_w // 2, h],
                     fill=(40, 130, 40, 255),
                 )
                 r = int(ts * 0.25)

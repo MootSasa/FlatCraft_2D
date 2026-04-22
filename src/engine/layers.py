@@ -13,7 +13,6 @@ from enum import Enum
 
 from src.world.models import Biome
 
-
 # =====================================================================
 # Цвета биомов для рендера
 # =====================================================================
@@ -162,9 +161,7 @@ PLACEMENT_RULES: list[ObjectPlacementRule] = [
     ObjectPlacementRule(Biome.TUNDRA, ObjectType.ROCK_LARGE, 0.01),
     ObjectPlacementRule(Biome.TUNDRA, ObjectType.TUNDRA_BUSH, 0.02),
     # Пляж
-    ObjectPlacementRule(
-        Biome.BEACH, ObjectType.REED, 0.15, shore_only=True
-    ),
+    ObjectPlacementRule(Biome.BEACH, ObjectType.REED, 0.15, shore_only=True),
     ObjectPlacementRule(Biome.BEACH, ObjectType.PALM, 0.01),
 ]
 

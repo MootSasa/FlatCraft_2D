@@ -44,7 +44,8 @@ class NoiseParams:
             )
         if not (0 < self.persistence <= 1):
             raise NoiseGenerationError(
-                f"Persistence должен быть в (0, 1], получено: {self.persistence}"
+                f"Persistence должен быть в (0, 1],"
+                f" получено: {self.persistence}"
             )
         if self.lacunarity <= 1:
             raise NoiseGenerationError(
@@ -169,8 +170,8 @@ class FractalNoiseGenerator:
         total_amplitude = 0.0
 
         for octave_idx in range(self._params.octaves):
-            freq_multiplier = self._params.lacunarity ** octave_idx
-            amp_multiplier = self._params.persistence ** octave_idx
+            freq_multiplier = self._params.lacunarity**octave_idx
+            amp_multiplier = self._params.persistence**octave_idx
 
             octave_map = self._generate_octave(
                 x_norm * freq_multiplier, y_norm * freq_multiplier, octave_idx
@@ -248,7 +249,7 @@ class FractalNoiseGenerator:
         v = _fade(fy)
 
         # Билинейная интерполяция
-        return (
+        return (  # type: ignore[no-any-return]
             d00 * (1 - u) * (1 - v)
             + d10 * u * (1 - v)
             + d01 * (1 - u) * v
@@ -269,4 +270,5 @@ class FractalNoiseGenerator:
         max_val = array.max()
         if max_val - min_val < 1e-12:
             return np.zeros_like(array)
-        return (array - min_val) / (max_val - min_val)
+        result = (array - min_val) / (max_val - min_val)
+        return result  # type: ignore[no-any-return]
