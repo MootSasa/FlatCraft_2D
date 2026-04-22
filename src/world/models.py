@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import arcade
 
 
 class WorldGenerationError(Exception):
@@ -39,7 +42,7 @@ class Biome(Enum):
 
     @property
     def color(self) -> tuple[int, int, int]:
-        "Цвет биома."""
+        "Цвет биома." ""
         return self._color
 
     @classmethod
@@ -110,8 +113,12 @@ class Chunk:
     x: int
     y: int
     tiles: np.ndarray
-    surface_sprite_list: Optional[object] = field(default=None, repr=False)
-    object_sprite_list: Optional[object] = field(default=None, repr=False)
+    surface_sprite_list: Optional[arcade.SpriteList[arcade.Sprite]] = field(
+        default=None, repr=False
+    )
+    object_sprite_list: Optional[arcade.SpriteList[arcade.Sprite]] = field(
+        default=None, repr=False
+    )
 
     @property
     def tile_count(self) -> int:
@@ -181,4 +188,4 @@ class World:
             return None
         local_x = tx % self.chunk_size
         local_y = ty % self.chunk_size
-        return chunk.tiles[local_y, local_x]  # type: ignore[index]
+        return chunk.tiles[local_y, local_x]  # type: ignore[no-any-return]

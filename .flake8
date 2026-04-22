@@ -1,0 +1,18 @@
+[flake8]
+max-line-length = 79
+extend-ignore = E203, W503
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    output,
+    assets,
+    *.npy,
+    *.png
+per-file-ignores =
+    # __init__.py часто имеет "unused" импорты (re-exports)
+    src/__init__.py:F401
+    src/engine/__init__.py:F401
+    src/utils/__init__.py:F401
+    src/world/__init__.py:F401

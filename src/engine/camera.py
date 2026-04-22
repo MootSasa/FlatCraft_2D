@@ -164,12 +164,14 @@ class GameCamera:
     @property
     def _view_width(self) -> float:
         """Ширина видимой области в пикселях."""
-        return self._window.width / self._cam.zoom
+        result = self._window.width / self._cam.zoom
+        return result  # type: ignore[no-any-return]
 
     @property
     def _view_height(self) -> float:
         """Высота видимой области в пикселях."""
-        return self._window.height / self._cam.zoom
+        result = self._window.height / self._cam.zoom
+        return result  # type: ignore[no-any-return]
 
     def visible_tile_bounds(
         self,
@@ -191,15 +193,11 @@ class GameCamera:
 
         # Столбцы (x) - прямое отображение
         left = max(0, int(left_px / self.tile_size))
-        right = min(
-            self._world_w - 1, int(right_px / self.tile_size)
-        )
+        right = min(self._world_w - 1, int(right_px / self.tile_size))
 
         # Строки (y) - переворот: пиксель y=0 внизу,
         # а строка ty=0 - верхняя в массиве
-        ty_top = max(
-            0, self._world_h - 1 - int(top_px / self.tile_size)
-        )
+        ty_top = max(0, self._world_h - 1 - int(top_px / self.tile_size))
         ty_bottom = min(
             self._world_h - 1,
             self._world_h - 1 - int(bottom_px / self.tile_size),
@@ -207,9 +205,7 @@ class GameCamera:
 
         return left, ty_top, right, ty_bottom
 
-    def visible_chunks(
-        self, chunk_size: int
-    ) -> set[tuple[int, int]]:
+    def visible_chunks(self, chunk_size: int) -> set[tuple[int, int]]:
         """Координаты видимых чанков.
 
         Args:

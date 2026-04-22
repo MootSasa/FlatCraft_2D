@@ -119,7 +119,8 @@ class GenerationConfig:
             )
         if not (0 < self.sea_level < 1):
             raise WorldGenerationError(
-                f"Уровень моря должен быть в (0, 1), получено: {self.sea_level}"
+                f"Уровень моря должен быть в (0, 1),"
+                f" получено: {self.sea_level}"
             )
         if self.gaussian_sigma < 0:
             raise WorldGenerationError(
@@ -147,9 +148,7 @@ class GenerationConfig:
                 f"{self.warp_strength}"
             )
         total_weight = (
-            self.continental_weight
-            + self.regional_weight
-            + self.local_weight
+            self.continental_weight + self.regional_weight + self.local_weight
         )
         if abs(total_weight - 1.0) > 0.01:
             raise WorldGenerationError(
@@ -414,7 +413,7 @@ class WorldGenerator:
         beach_threshold = cfg.sea_level + 0.05
         temp_high = 0.65
         temp_mid = 0.3
-        temp_low = 0.15
+        temp_low = 0.15  # noqa: F841
         temp_beach = 0.4
         moist_high = 0.6
         moist_mid = 0.35
@@ -435,9 +434,7 @@ class WorldGenerator:
 
         # Тундра: низкая температура + низкая влажность
         mask_tundra = (
-            mask_inland
-            & (temperature < temp_mid)
-            & (moisture < moist_mid)
+            mask_inland & (temperature < temp_mid) & (moisture < moist_mid)
         )
 
         # Тайга: низкая температура + высокая влажность
@@ -507,11 +504,12 @@ class WorldGenerator:
     def _generate_water_features(
         biome_map: np.ndarray,
         land_mask: np.ndarray,
-        elevation: np.ndarray, #TODO
+        elevation: np.ndarray,  # TODO
         temperature: np.ndarray,
         cfg: GenerationConfig,
     ) -> np.ndarray:
-        """Добавляет водные детали: глубокий океан, замёрзший океан, ледяные острова.
+        """Добавляет водные детали: глубокий океан,
+        замёрзший океан, ледяные острова.
 
         Заменяет заглушку OCEAN на конкретные водные биомы:
         - DEEP_OCEAN - далеко от суши
@@ -563,21 +561,21 @@ class WorldGenerator:
         mask_deep_ocean = noisy_dist >= cfg.deep_ocean_distance
 
         # Замёрзший глубокий океан
-        mask_frozen_deep = ocean_mask & mask_deep_ocean & (
-            temperature < temp_freeze
+        mask_frozen_deep = (
+            ocean_mask & mask_deep_ocean & (temperature < temp_freeze)
         )
         # Обычный глубокий океан
-        mask_deep_unfrozen = ocean_mask & mask_deep_ocean & (
-            temperature >= temp_freeze
+        mask_deep_unfrozen = (
+            ocean_mask & mask_deep_ocean & (temperature >= temp_freeze)
         )
 
         # Замёрзший мелкий океан
-        mask_frozen_shallow = ocean_mask & (~mask_deep_ocean) & (
-            temperature < temp_freeze
+        mask_frozen_shallow = (
+            ocean_mask & (~mask_deep_ocean) & (temperature < temp_freeze)
         )
         # Обычный мелкий океан
-        mask_ocean_shallow = ocean_mask & (~mask_deep_ocean) & (
-            temperature >= temp_freeze
+        mask_ocean_shallow = (
+            ocean_mask & (~mask_deep_ocean) & (temperature >= temp_freeze)
         )
 
         result[mask_frozen_deep] = Biome.FROZEN_OCEAN
@@ -645,9 +643,7 @@ class WorldGenerator:
         ice_noise = ice_island_gen.generate_map(cfg.width, cfg.height)
 
         # Ледяные острова: только глубокий замёрзший океан + шум выше порога
-        deep_frozen_mask = (
-            (result == Biome.FROZEN_OCEAN) & mask_deep_ocean
-        )
+        deep_frozen_mask = (result == Biome.FROZEN_OCEAN) & mask_deep_ocean
         ice_island_mask = deep_frozen_mask & (ice_noise > 0.55)
 
         # Удаляем слишком мелкие ледяные острова
@@ -773,7 +769,8 @@ def _normalize_to_01(array: np.ndarray) -> np.ndarray:
     max_val = array.max()
     if max_val - min_val < 1e-12:
         return np.zeros_like(array)
-    return (array - min_val) / (max_val - min_val)
+    result = (array - min_val) / (max_val - min_val)
+    return result  # type: ignore[no-any-return]
 
 
 def _find_neighbor_biome(
@@ -846,4 +843,4 @@ def _bilinear_sample(
         + array[y1, x1] * fy * fx
     )
 
-    return result
+    return result  # type: ignore[no-any-return]
