@@ -13,6 +13,7 @@ from concurrent.futures import (
     ProcessPoolExecutor,
     Future,
 )
+from typing import Any
 from dataclasses import dataclass
 
 import numpy as np
@@ -134,7 +135,7 @@ def _precompute_gradients(
 
     # Мультипроцессинг: строки по воркерам
     try:
-        futures: list[Future] = [
+        futures: list[Future[Any]] = [
             executor.submit(
                 _compute_gradient_row,
                 octave_seed,

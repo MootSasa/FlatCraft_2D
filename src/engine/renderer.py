@@ -893,7 +893,7 @@ class Renderer:
             trunk_h = ts // 2
             trunk_x = w // 2 - trunk_w // 2
             draw.rectangle(
-                [trunk_x, h - trunk_h, trunk_x + trunk_w, h],
+                (trunk_x, h - trunk_h, trunk_x + trunk_w, h),
                 fill=(100, 70, 40, 255),
             )
             crown_r = int(ts * 0.45)
@@ -927,16 +927,16 @@ class Renderer:
             blade_w = max(ts // 8, 1)
             for i in range(5):
                 bx = w // 6 + i * w // 5 - blade_w // 2
-                draw.rectangle([bx, h // 3, bx + blade_w, h], fill=color)
+                draw.rectangle((bx, h // 3, bx + blade_w, h), fill=color)
         elif label == "grass_tuft_small":
             blade_w = max(ts // 8, 1)
             for i in range(3):
                 bx = w // 4 + i * w // 4 - blade_w // 2
-                draw.rectangle([bx, h // 3, bx + blade_w, h], fill=color)
+                draw.rectangle((bx, h // 3, bx + blade_w, h), fill=color)
         elif label == "flower":
             stem_w = max(ts // 8, 1)
             draw.rectangle(
-                [w // 2 - stem_w // 2, h // 2, w // 2 + stem_w // 2, h],
+                (w // 2 - stem_w // 2, h // 2, w // 2 + stem_w // 2, h),
                 fill=(40, 130, 40, 255),
             )
             r = int(ts * 0.25)
@@ -945,6 +945,6 @@ class Renderer:
                 fill=color,
             )
         else:
-            draw.rectangle([0, 0, w, h], fill=color)
+            draw.rectangle((0, 0, w, h), fill=color)
 
         return arcade.Texture(image=img, size=(w, h))

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import glob
 import math
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import arcade
 from PIL import Image
@@ -154,7 +154,7 @@ class Player:
 
         # Звуки шагов
         self._step_sounds: dict[str, arcade.Sound] = {}
-        self._step_player = None  # pyglet.media.Player
+        self._step_player: Any = None  # pyglet.media.Player
         self._step_type: Optional[str] = None
         self._step_fade: float = 0.0  # оставшееся время затухания
         self._load_step_sounds()
@@ -162,9 +162,9 @@ class Player:
         # Звуки биомов (фоновая атмосфера)
         self._ambient_sounds: dict[Biome, arcade.Sound] = {}
         self._ambient_current_biome: Optional[Biome] = None
-        self._ambient_current_player = None  # pyglet.media.Player
+        self._ambient_current_player: Any = None  # pyglet.media.Player
         self._ambient_fade_biome: Optional[Biome] = None
-        self._ambient_fade_player = None  # pyglet.media.Player (затухающий)
+        self._ambient_fade_player: Any = None  # затухающий
         self._ambient_fade_timer: float = 0.0
         self._load_ambient_sounds()
 
@@ -207,16 +207,16 @@ class Player:
         # Текстуры плывущего котика
         for direction, folder in _WATER_CAT_FOLDERS.items():
             paths = sorted(glob.glob(f"{folder}/*.png"))
-            frames: list[arcade.Texture] = []
+            water_frames: list[arcade.Texture] = []
             for path in paths:
                 img = Image.open(path).convert("RGBA")
                 tex = arcade.Texture(image=img, size=img.size)
-                frames.append(tex)
-            self._water_textures[direction] = frames
+                water_frames.append(tex)
+            self._water_textures[direction] = water_frames
 
         # "left" = отражённый "right" для водяных текстур
         if "right" in self._water_textures:
-            left_frames: list[arcade.Texture] = []
+            water_left_frames: list[arcade.Texture] = []
             for tex in self._water_textures["right"]:
                 flipped_img = tex.image.transpose(
                     Image.Transpose.FLIP_LEFT_RIGHT
@@ -224,8 +224,8 @@ class Player:
                 flipped_tex = arcade.Texture(
                     image=flipped_img, size=flipped_img.size
                 )
-                left_frames.append(flipped_tex)
-            self._water_textures["left"] = left_frames
+                water_left_frames.append(flipped_tex)
+            self._water_textures["left"] = water_left_frames
 
     def _load_step_sounds(self) -> None:
         """Загружает звуки шагов для каждого типа поверхности."""
@@ -364,7 +364,7 @@ class Player:
 
     @staticmethod
     def _stop_player(
-        sound: arcade.Sound | None, player: object
+        sound: arcade.Sound | None, player: Any
     ) -> None:
         """Останавливает pyglet-плеер для данного звука."""
         if sound is not None and player is not None:

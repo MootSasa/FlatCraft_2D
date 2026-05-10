@@ -16,7 +16,7 @@ import sys
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import arcade
 
@@ -206,8 +206,8 @@ class InputManager:
         self._keys_just_pressed_snap: set[int] = set()
 
         # Состояние геймпада
-        self._controller: Optional[arcade.Controller] = None
-        self._controller_manager: Optional[arcade.ControllerManager] = None
+        self._controller: Any = None
+        self._controller_manager: Any = None
         self._prev_gamepad_buttons: set[str] = set()
 
         # Привязки

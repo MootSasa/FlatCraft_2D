@@ -66,6 +66,8 @@ module = [
     "PIL.*",
     "PIL",
     "perlin_noise.*",
+    "pyinstrument",
+    "psutil",
 ]
 ignore_missing_imports = true
 

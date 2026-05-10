@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 import arcade
 
@@ -121,7 +121,7 @@ class FlatCraftWindow(arcade.Window):
 
         # Музыка главного меню (циклическая)
         self._menu_music: Optional[arcade.Sound] = None
-        self._menu_music_player: Optional[object] = None
+        self._menu_music_player: Any = None
         self._menu_music_playing: bool = False
         self._menu_music_fade: float = 0.0  # оставшееся время затухания
         self._MENU_MUSIC_FADE_DURATION: float = 0.8  # секунды
@@ -229,7 +229,7 @@ class FlatCraftWindow(arcade.Window):
                 if self._menu_music_player is not None:
                     self._menu_music.stop(self._menu_music_player)
                 else:
-                    self._menu_music.stop()
+                    self._menu_music.stop()  # type: ignore[call-arg]
             except Exception:
                 pass
             self._menu_music_playing = False

@@ -14,7 +14,7 @@ try:
     from pyinstrument import Profiler as _PyinstrumentProfiler
     _HAS_PYINSTRUMENT = True
 except ImportError:
-    _PyinstrumentProfiler = None  # type: ignore[assignment,misc]
+    _PyinstrumentProfiler = None
     _HAS_PYINSTRUMENT = False
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ class GameProfiler:
         self.enabled: bool = False
         self._profiler: Optional[
             _PyinstrumentProfiler
-        ] = None  # type: ignore[assignment]
+        ] = None
         self._section_start: float = 0.0
         self._frame_count: int = 0
         self._capture_frames: int = 300
@@ -181,7 +181,7 @@ class _Section:
         self._name = name
         self._profiler: Optional[
             _PyinstrumentProfiler
-        ] = None  # type: ignore[assignment]
+        ] = None
         self._start_time: float = 0.0
 
     def __enter__(self) -> "_Section":

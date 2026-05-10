@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import tracemalloc
+from typing import Any
 
 import arcade
 
@@ -17,11 +18,12 @@ except ImportError:
     _resource_mod = None  # type: ignore[assignment]
 
 _HAS_PSUTIL = False
+_psutil_mod: Any = None
 try:
-    import psutil as _psutil_mod  # type: ignore[import-untyped]
+    import psutil as _psutil_mod
     _HAS_PSUTIL = True
 except ImportError:
-    _psutil_mod = None  # type: ignore[assignment]
+    pass
 
 
 class PerformanceMonitor:
@@ -146,7 +148,7 @@ class PerformanceMonitor:
             try:
                 proc = _psutil_mod.Process()
                 mem_info = proc.memory_info()
-                return mem_info.rss / (1024 * 1024)
+                return float(mem_info.rss / (1024 * 1024))
             except Exception:
                 pass
         if _HAS_RESOURCE and _resource_mod is not None:
