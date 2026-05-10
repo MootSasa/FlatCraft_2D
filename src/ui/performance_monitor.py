@@ -36,7 +36,7 @@ class PerformanceMonitor:
 
     def __init__(self) -> None:
         """Инициализация монитора."""
-        self.visible: bool = True
+        self.visible: bool = False
         self._fps: float = 0.0
         self._tile_count: int = 0
         self._chunk_count: int = 0
