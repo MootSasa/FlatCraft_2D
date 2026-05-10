@@ -139,7 +139,7 @@ jobs:
 
       - name: Build with Nuitka
         run: |
-          python -m nuitka --onefile \
+          python -m nuitka \
             --macos-create-app-bundle \
             --output-filename=flatcraft \
             --include-package=src \
