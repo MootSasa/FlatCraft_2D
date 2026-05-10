@@ -87,24 +87,31 @@ python -m src.main
 # Linux
 ./scripts/build.sh
 
+# macOS
+./scripts/build_macos.sh
+
 # Windows
 scripts\build.bat
 ```
 
-Выходной файл: `builds/flatcraft` (Linux) или `builds/flatcraft.exe` (Windows).
+Выходной файл: `builds/flatcraft` (Linux), `builds/flatcraft.app` (macOS), `builds/flatcraft.exe` (Windows).
+
+> На macOS без code signing приложение покажет предупреждение. Запустите через
+> Правый клик → Открыть или выполните `xattr -cr builds/flatcraft.app`.
 
 ---
 
 ## CI/CD
 
 - **Lint** — flake8 + mypy запускаются при каждом push и PR
-- **Build** — сборка Nuitka запускается вручную (Actions → Run workflow) или при пуше тега `v*`
-- **Release** — при пуше тега `v*` автоматически создаётся GitHub Release с бинарниками
-- **Docs** — Sphinx-документация собирается и деплоится на GitHub Pages при пуше в main
+- **Build** — сборка Nuitka (Windows, Linux, macOS) запускается вручную или при пуше тега `v*`
+- **Release** — при пуше тега `v*` автоматически создаётся GitHub Release с бинарниками для всех платформ
+- **Docs** — Sphinx-документация деплоится на GitHub Pages при пуше в main
 
 ```bash
-git tag v*
-git push origin v*
+git tag v0.2.0
+git push origin v0.2.0
+# → линтеры → сборка Win/Linux/macOS → релиз с .exe + binary + .app.zip
 ```
 
 ---
