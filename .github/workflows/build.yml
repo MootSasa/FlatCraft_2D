@@ -2,8 +2,12 @@ name: Build FlatCraft
 
 on:
   push:
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   lint:
@@ -30,7 +34,7 @@ jobs:
   build-windows:
     name: Windows (.exe)
     needs: lint
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +77,7 @@ jobs:
   build-linux:
     name: Linux (binary)
     needs: lint
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -115,3 +119,80 @@ jobs:
           name: flatcraft-linux
           path: builds/flatcraft
           retention-days: 30
+
+  build-macos:
+    name: macOS (.app)
+    needs: lint
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install "Nuitka[onefile]" ordered-set
+
+      - name: Build with Nuitka
+        run: |
+          python -m nuitka --onefile \
+            --macos-create-app-bundle \
+            --output-filename=flatcraft \
+            --include-package=src \
+            --include-package=arcade \
+            --include-package=scipy \
+            --include-package=numpy \
+            --include-package=PIL \
+            --include-package=pydantic \
+            --include-package=psutil \
+            --include-package=perlin_noise \
+            --include-data-dir=assets=assets \
+            --output-dir=builds \
+            --assume-yes-for-downloads \
+            src/main.py
+
+      - name: Zip .app bundle
+        run: |
+          cd builds
+          zip -r flatcraft-macos.zip flatcraft.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatcraft-macos
+          path: builds/flatcraft-macos.zip
+          retention-days: 30
+
+  release:
+    name: Create Release
+    needs: [build-windows, build-linux, build-macos]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: flatcraft-windows
+          path: release/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: flatcraft-linux
+          path: release/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: flatcraft-macos
+          path: release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/flatcraft.exe
+            release/flatcraft
+            release/flatcraft-macos.zip
+          generate_release_notes: true
