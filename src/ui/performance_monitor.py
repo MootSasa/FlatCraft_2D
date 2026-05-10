@@ -20,7 +20,7 @@ except ImportError:
 _HAS_PSUTIL = False
 _psutil_mod: Any = None
 try:
-    import psutil as _psutil_mod  # noqa: F811
+    import psutil as _psutil_mod  # type: ignore[no-redef]  # noqa: F811
     _HAS_PSUTIL = True
 except ImportError:
     pass
