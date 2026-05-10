@@ -1,27 +1,32 @@
 #!/usr/bin/env python3
-"""Точка входа FlatCraft 2D.
+"""Точка входа FlatCraft.
 
-Генерирует мир и запускает игровое окно Arcade.
+Запускает игровое окно Arcade с экраном загрузки.
+Мир генерируется в фоновом потоке во время загрузки.
 
 Использование::
-    python -m src.main [--seed SEED] [--width W] [--height H] [--tile-size TS]
+    linux: python3 -m src.main
+        [--seed SEED] [--width W] [--height H] [--tile-size TS]
+    windows: python.exe -m src.main
+        [--seed SEED] [--width W] [--height H] [--tile-size TS]
 """
 
 from __future__ import annotations
 
 import argparse
+import os
+import sys
 
 import arcade
 
 from src.engine.game_window import FlatCraftWindow
-from src.world.generator import GenerationConfig, WorldGenerator
+from src.world.generator import GenerationConfig
 
 
 def _parse_args() -> argparse.Namespace:
     """Парсит аргументы командной строки."""
     parser = argparse.ArgumentParser(
-        description="FlatCraft 2D - процедурно генерируемый мир"
-    )
+        description="FlatCraft - игра с процедурной генерацией мира")
     parser.add_argument(
         "--seed", type=int, default=42, help="Сид генерации (default: 42)"
     )
@@ -37,40 +42,26 @@ def _parse_args() -> argparse.Namespace:
         default=500,
         help="Высота мира в тайлах (default: 500)",
     )
-    parser.add_argument(
-        "--tile-size",
-        type=int,
-        default=32,
-        help="Размер тайла в пикселях (default: 32)",
-    )
     return parser.parse_args()
 
 
 def main() -> None:
-    """Генерирует мир и запускает окно."""
+    """Запускает окно с экраном загрузки."""
+    if getattr(sys, 'frozen', False):
+        os.chdir(os.path.dirname(sys.executable))
+
+    arcade.load_font("assets/fonts/JetBrainsMono-Regular.ttf")
+    arcade.load_font("assets/fonts/JetBrainsMono-Bold.ttf")
+
     args = _parse_args()
 
-    # Генерация мира
-    print(
-        f"Генерация мира {args.width}x{args.height}, " f"seed={args.seed}..."
-    )
     config = GenerationConfig(
         seed=args.seed,
         width=args.width,
         height=args.height,
     )
-    generator = WorldGenerator(config)
-    world = generator.generate()
-    print(
-        f"Мир создан: {world.width}x{world.height}, "
-        f"{world.chunk_count} чанков"
-    )
 
-    # Запуск окна
-    FlatCraftWindow(
-        world=world,
-        tile_size=args.tile_size,
-    )
+    FlatCraftWindow(config=config)
     arcade.run()
 
 

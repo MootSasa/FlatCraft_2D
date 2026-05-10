@@ -1,0 +1,50 @@
+{
+  "keys": {
+    "MOVE_UP": [
+      119,
+      65362
+    ],
+    "MOVE_DOWN": [
+      115,
+      65364
+    ],
+    "MOVE_LEFT": [
+      97,
+      65361
+    ],
+    "MOVE_RIGHT": [
+      100,
+      65363
+    ],
+    "RUN": [
+      65505,
+      65506
+    ],
+    "ZOOM_IN": [
+      61,
+      65451
+    ],
+    "ZOOM_OUT": [
+      45,
+      65453
+    ],
+    "MENU": [],
+    "TOGGLE_PERF": [
+      65472
+    ],
+    "TOGGLE_PROFILER": [
+      65473
+    ]
+  },
+  "gamepad": {
+    "MOVE_UP": "lefty-",
+    "MOVE_DOWN": "lefty+",
+    "MOVE_LEFT": "leftx-",
+    "MOVE_RIGHT": "leftx+",
+    "RUN": "leftx-",
+    "ZOOM_IN": "righttrigger",
+    "ZOOM_OUT": "lefttrigger",
+    "MENU": "start",
+    "TOGGLE_PERF": "back"
+  }
+}

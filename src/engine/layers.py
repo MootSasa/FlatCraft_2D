@@ -43,10 +43,16 @@ class ObjectType(Enum):
     Каждый объект имеет размер в тайлах (width x height) и цвет.
     """
 
-    # Деревья - 1x2 тайла
+    # Деревья лиственные - 1x2 тайла (assets/plants/tree/)
     TREE_OAK = ("tree_oak", 1, 2, (20, 100, 30))
-    TREE_PINE = ("tree_pine", 1, 2, (10, 80, 30))
     TREE_BIRCH = ("tree_birch", 1, 2, (100, 140, 60))
+    TREE_BAOBAB = ("tree_baobab", 1, 2, (140, 120, 50))
+    TREE_POPLAR = ("tree_poplar", 1, 2, (60, 120, 40))
+    TREE_ASH = ("tree_ash", 1, 2, (80, 110, 50))
+    TREE_CHESTNUT = ("tree_chestnut", 1, 2, (50, 90, 30))
+    TREE_WILLOW = ("tree_willow", 1, 2, (70, 130, 50))
+    # Деревья хвойные - 1x2 тайла (assets/plants/pine_tree/)
+    TREE_PINE = ("tree_pine", 1, 2, (10, 80, 30))
 
     # Кусты - 1x1 тайл
     BUSH = ("bush", 1, 1, (40, 130, 40))
@@ -137,32 +143,36 @@ class ObjectPlacementRule:
 
 # Правила размещения по биомам
 PLACEMENT_RULES: list[ObjectPlacementRule] = [
-    # Лес
-    ObjectPlacementRule(Biome.FOREST, ObjectType.TREE_OAK, 0.25),
-    ObjectPlacementRule(Biome.FOREST, ObjectType.TREE_BIRCH, 0.08),
+    # Лес — дуб, берёза, ясень, каштан, ива, кусты, трава
+    ObjectPlacementRule(Biome.FOREST, ObjectType.TREE_OAK, 0.08),
+    ObjectPlacementRule(Biome.FOREST, ObjectType.TREE_BIRCH, 0.06),
+    ObjectPlacementRule(Biome.FOREST, ObjectType.TREE_ASH, 0.04),
+    ObjectPlacementRule(Biome.FOREST, ObjectType.TREE_CHESTNUT, 0.03),
+    ObjectPlacementRule(Biome.FOREST, ObjectType.TREE_WILLOW, 0.02),
     ObjectPlacementRule(Biome.FOREST, ObjectType.BUSH, 0.10),
     ObjectPlacementRule(Biome.FOREST, ObjectType.GRASS_TUFT, 0.05),
-    # Луга
-    ObjectPlacementRule(Biome.GRASSLAND, ObjectType.GRASS_TUFT, 0.15),
-    ObjectPlacementRule(Biome.GRASSLAND, ObjectType.TREE_OAK, 0.03),
+    # Луга — трава, тополь, дуб, ива, цветы, кусты
+    ObjectPlacementRule(Biome.GRASSLAND, ObjectType.GRASS_TUFT, 0.25),
+    ObjectPlacementRule(Biome.GRASSLAND, ObjectType.TREE_POPLAR, 0.01),
+    ObjectPlacementRule(Biome.GRASSLAND, ObjectType.TREE_OAK, 0.01),
+    ObjectPlacementRule(Biome.GRASSLAND, ObjectType.TREE_WILLOW, 0.01),
     ObjectPlacementRule(Biome.GRASSLAND, ObjectType.FLOWER, 0.05),
     ObjectPlacementRule(Biome.GRASSLAND, ObjectType.BUSH, 0.04),
-    # Тайга
-    ObjectPlacementRule(Biome.TAIGA, ObjectType.TREE_PINE, 0.20),
+    # Тайга — хвойные деревья (сосна, ель, пихта, кипарис)
+    ObjectPlacementRule(Biome.TAIGA, ObjectType.TREE_PINE, 0.25),
     ObjectPlacementRule(Biome.TAIGA, ObjectType.BUSH, 0.05),
-    # Саванна
+    # Саванна — баобаб, трава
     ObjectPlacementRule(Biome.SAVANNA, ObjectType.GRASS_TUFT, 0.08),
-    ObjectPlacementRule(Biome.SAVANNA, ObjectType.TREE_OAK, 0.01),
-    # Пустыня
+    ObjectPlacementRule(Biome.SAVANNA, ObjectType.TREE_BAOBAB, 0.02),
+    # Пустыня — кактус, перекати-поле
     ObjectPlacementRule(Biome.DESERT, ObjectType.CACTUS, 0.02),
     ObjectPlacementRule(Biome.DESERT, ObjectType.TUMBLEWEED, 0.03),
-    # Тундра
+    # Тундра — камни, тундровые кусты
     ObjectPlacementRule(Biome.TUNDRA, ObjectType.ROCK_SMALL, 0.04),
     ObjectPlacementRule(Biome.TUNDRA, ObjectType.ROCK_LARGE, 0.01),
     ObjectPlacementRule(Biome.TUNDRA, ObjectType.TUNDRA_BUSH, 0.02),
-    # Пляж
+    # Пляж — тростник вдоль берега
     ObjectPlacementRule(Biome.BEACH, ObjectType.REED, 0.15, shore_only=True),
-    ObjectPlacementRule(Biome.BEACH, ObjectType.PALM, 0.01),
 ]
 
 # Fallback: широкий объект -> узкий объект при наложении

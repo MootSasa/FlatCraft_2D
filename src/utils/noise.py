@@ -2,14 +2,27 @@
 
 Библиотека perlin-noise даёт градиенты (через hasher + sample_vector),
 а интерполяция делается на NumPy для скорости.
+Мультипроцессинг ускоряет предвычисление градиентов в 2-4x.
 """
 
 from __future__ import annotations
 
+import logging
+import os
+from concurrent.futures import (
+    ProcessPoolExecutor,
+    Future,
+)
+from typing import Any
 from dataclasses import dataclass
 
 import numpy as np
 from perlin_noise.tools import hasher, sample_vector
+
+logger = logging.getLogger(__name__)
+
+# Количество воркеров для мультипроцессинга
+_MP_WORKERS: int = max(2, min(128, (os.cpu_count() or 2)))
 
 
 class NoiseGenerationError(Exception):
@@ -53,10 +66,35 @@ class NoiseParams:
             )
 
 
+def _compute_gradient_row(
+    octave_seed: int, iy: int, max_ix: int
+) -> tuple[int, np.ndarray, np.ndarray]:
+    """Вычисляет градиенты для одной строки сетки.
+
+    Args:
+        octave_seed: Сид октавы.
+        iy: Номер строки.
+        max_ix: Максимальная X-координата.
+
+    Returns:
+        Кортеж (iy, row_x, row_y).
+    """
+    row_x = np.empty(max_ix + 1, dtype=np.float64)
+    row_y = np.empty(max_ix + 1, dtype=np.float64)
+    for ix in range(max_ix + 1):
+        h = hasher((ix, iy))
+        vec_seed = octave_seed * h
+        vec = sample_vector(dimensions=2, seed=vec_seed)
+        row_x[ix] = vec[0]
+        row_y[ix] = vec[1]
+    return iy, row_x, row_y
+
+
 def _precompute_gradients(
     octave_seed: int,
     max_ix: int,
     max_iy: int,
+    executor: ProcessPoolExecutor | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Предвычисляет градиентные векторы для сетки.
 
@@ -64,24 +102,68 @@ def _precompute_gradients(
     логику RandVec: seed = octave_seed * hasher((ix, iy)),
     vec = sample_vector(2, seed).
 
+    Если передан executor - использует его для распределения
+    строк по воркерам. Иначе - однопоточный режим.
+
     Args:
         octave_seed: Сид октавы (seed + octave_idx * 1000).
         max_ix: Максимальная X-координата сетки.
         max_iy: Максимальная Y-координата сетки.
+        executor: Существующий пул процессов
+            (переиспользуется между октавами).
 
     Returns:
-        Кортеж (grad_x, grad_y) - массивы формы (max_iy+1, max_ix+1).
+        Кортеж (grad_x, grad_y) - массивы формы
+        (max_iy+1, max_ix+1).
     """
     grad_x = np.empty((max_iy + 1, max_ix + 1), dtype=np.float64)
     grad_y = np.empty((max_iy + 1, max_ix + 1), dtype=np.float64)
 
-    for iy in range(max_iy + 1):
-        for ix in range(max_ix + 1):
-            h = hasher((ix, iy))
-            vec_seed = octave_seed * h
-            vec = sample_vector(dimensions=2, seed=vec_seed)
-            grad_x[iy, ix] = vec[0]
-            grad_y[iy, ix] = vec[1]
+    # Маленькие сетки - нет смысла в мультипроцессинге
+    total_cells = (max_ix + 1) * (max_iy + 1)
+    if total_cells < 500 or executor is None:
+        for iy in range(max_iy + 1):
+            for ix in range(max_ix + 1):
+                h = hasher((ix, iy))
+                vec_seed = octave_seed * h
+                vec = sample_vector(
+                    dimensions=2, seed=vec_seed
+                )
+                grad_x[iy, ix] = vec[0]
+                grad_y[iy, ix] = vec[1]
+        return grad_x, grad_y
+
+    # Мультипроцессинг: строки по воркерам
+    try:
+        futures: list[Future[Any]] = [
+            executor.submit(
+                _compute_gradient_row,
+                octave_seed,
+                iy,
+                max_ix,
+            )
+            for iy in range(max_iy + 1)
+        ]
+        for future in futures:
+            iy, row_x, row_y = future.result()
+            grad_x[iy] = row_x
+            grad_y[iy] = row_y
+    except Exception as exc:
+        # Fallback: однопоточный режим при ошибке
+        logger.warning(
+            "Мультипроцессинг недоступен (%s), "
+            "переключаюсь на однопоточный режим",
+            exc,
+        )
+        for iy in range(max_iy + 1):
+            for ix in range(max_ix + 1):
+                h = hasher((ix, iy))
+                vec_seed = octave_seed * h
+                vec = sample_vector(
+                    dimensions=2, seed=vec_seed
+                )
+                grad_x[iy, ix] = vec[0]
+                grad_y[iy, ix] = vec[1]
 
     return grad_x, grad_y
 
@@ -141,19 +223,24 @@ class FractalNoiseGenerator:
         с увеличивающейся частотой и уменьшающейся амплитудой,
         потом все слои складываются.
 
+        Создаёт один ProcessPoolExecutor на все октавы,
+        вместо создания/уничтожения пула для каждой октавы.
+
         Args:
             width: Ширина карты.
             height: Высота карты.
 
         Returns:
-            Массив NumPy формы (height, width) со значениями [0, 1].
+            Массив NumPy формы (height, width) со
+            значениями [0, 1].
 
         Raises:
             NoiseGenerationError: Если размеры некорректны.
         """
         if width <= 0 or height <= 0:
             raise NoiseGenerationError(
-                f"Размеры должны быть > 0, получено: {width}x{height}"
+                f"Размеры должны быть > 0,"
+                f" получено: {width}x{height}"
             )
 
         # Координатная сетка
@@ -165,20 +252,46 @@ class FractalNoiseGenerator:
         x_norm = x_grid * self._params.frequency
         y_norm = y_grid * self._params.frequency
 
+        # Один пул процессов на все октавы
+        executor: ProcessPoolExecutor | None = None
+        try:
+            executor = ProcessPoolExecutor(
+                max_workers=_MP_WORKERS,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Не удалось создать пул процессов (%s),"
+                " переключаюсь на однопоточный режим",
+                exc,
+            )
+            executor = None
+
         # Суммируем октавы
         result = np.zeros((height, width), dtype=np.float64)
         total_amplitude = 0.0
 
-        for octave_idx in range(self._params.octaves):
-            freq_multiplier = self._params.lacunarity**octave_idx
-            amp_multiplier = self._params.persistence**octave_idx
+        try:
+            for octave_idx in range(self._params.octaves):
+                freq_multiplier = (
+                    self._params.lacunarity**octave_idx
+                )
+                amp_multiplier = (
+                    self._params.persistence**octave_idx
+                )
 
-            octave_map = self._generate_octave(
-                x_norm * freq_multiplier, y_norm * freq_multiplier, octave_idx
-            )
+                octave_map = self._generate_octave(
+                    x_norm * freq_multiplier,
+                    y_norm * freq_multiplier,
+                    octave_idx,
+                    executor=executor,
+                )
 
-            result += octave_map * amp_multiplier
-            total_amplitude += amp_multiplier
+                result += octave_map * amp_multiplier
+                total_amplitude += amp_multiplier
+        finally:
+            # Освобождаем пул
+            if executor is not None:
+                executor.shutdown(wait=True)
 
         # Нормализация в [0, 1]
         if total_amplitude > 0:
@@ -193,6 +306,7 @@ class FractalNoiseGenerator:
         x_norm: np.ndarray,
         y_norm: np.ndarray,
         octave_idx: int,
+        executor: ProcessPoolExecutor | None = None,
     ) -> np.ndarray:
         """Генерирует одну октаву шума (векторизованно).
 
@@ -209,6 +323,7 @@ class FractalNoiseGenerator:
             x_norm: Нормализованные X-координаты (2D-массив).
             y_norm: Нормализованные Y-координаты (2D-массив).
             octave_idx: Номер октавы (для вычисления сида).
+            executor: Пул процессов для мультипроцессинга.
 
         Returns:
             2D-массив значений шума для этой октавы.
@@ -226,7 +341,10 @@ class FractalNoiseGenerator:
         # Предвычисляем градиенты
         max_ix = int(ix.max()) + 1
         max_iy = int(iy.max()) + 1
-        grad_x, grad_y = _precompute_gradients(octave_seed, max_ix, max_iy)
+        grad_x, grad_y = _precompute_gradients(
+            octave_seed, max_ix, max_iy,
+            executor=executor,
+        )
 
         # Градиенты для 4 углов каждой ячейки
         g00_x = grad_x[iy, ix]

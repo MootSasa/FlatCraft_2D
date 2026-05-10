@@ -1,29 +1,33 @@
 """2D-камера: перемещение и масштабирование.
 
-Оборачивает arcade.camera.Camera2D, добавляя:
-- Управление WASD / стрелки
-- Масштабирование колесом мыши и клавишами +/-
-- Ограничение позиции границами мира
+Камера следует за игроком, плавно перемещаясь к его позиции.
+Зум управляется колёсиком мыши и клавишами +/-.
 """
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import arcade
 from arcade.camera import Camera2D
 
-# Скорость камеры (пикселей/сек)
-_CAMERA_SPEED: float = 600.0
-# Сглаживание (0..1); больше - плавнее
-_LERP_SMOOTHING: float = 0.85
-# Пределы масштаба
-_MIN_ZOOM: float = 0.15
-_MAX_ZOOM: float = 5.0
-# Шаг масштабирования
-_ZOOM_STEP: float = 0.12
+if TYPE_CHECKING:
+    from src.engine.input_manager import InputManager
+
+# Ограничения зума
+_MIN_ZOOM: float = 0.25
+_MAX_ZOOM: float = 4.0
+_ZOOM_STEP: float = 0.1
+
+# Плавность следования (0 = мгновенно, 1 = нет движения)
+_LERP_SMOOTHING: float = 0.01
 
 
 class GameCamera:
     """2D-камера с управлением и ограничениями.
+
+    Камера следует за позициёй игрока, плавно перемещаясь.
+    Зум управляется колёсиком мыши и клавишами +/-.
 
     Attributes:
         tile_size: Размер тайла в пикселях.
@@ -60,20 +64,9 @@ class GameCamera:
         self._target_y = self._world_px_h / 2.0
         self._cam.position = (self._target_x, self._target_y)
 
-        # Зажатые клавиши
-        self._keys: set[int] = set()
-
     # ================================================================
     # Ввод
     # ================================================================
-
-    def handle_key_press(self, key: int) -> None:
-        """Обрабатывает нажатие клавиши."""
-        self._keys.add(key)
-
-    def handle_key_release(self, key: int) -> None:
-        """Обрабатывает отпускание клавиши."""
-        self._keys.discard(key)
 
     def handle_mouse_scroll(self, scroll_y: int) -> None:
         """Обрабатывает прокрутку колеса мыши.
@@ -89,51 +82,74 @@ class GameCamera:
         self._cam.zoom = max(_MIN_ZOOM, min(_MAX_ZOOM, zoom))
 
     # ================================================================
-    # Обновление
+    # Управление
     # ================================================================
 
-    def update(self, delta_time: float) -> None:
-        """Обновляет позицию камеры.
+    def move_to(self, world_x: float, world_y: float) -> None:
+        """Мгновенно перемещает камеру в указанную точку мира.
 
         Args:
-            delta_time: Время с прошлого кадра (сек).
+            world_x: X-координата в пикселях мира.
+            world_y: Y-координата в пикселях мира.
         """
-        # Скорость
-        speed = _CAMERA_SPEED / self._cam.zoom * delta_time
-
-        dx, dy = 0.0, 0.0
-        if arcade.key.W in self._keys or arcade.key.UP in self._keys:
-            dy += speed
-        if arcade.key.S in self._keys or arcade.key.DOWN in self._keys:
-            dy -= speed
-        if arcade.key.A in self._keys or arcade.key.LEFT in self._keys:
-            dx -= speed
-        if arcade.key.D in self._keys or arcade.key.RIGHT in self._keys:
-            dx += speed
-
-        # Зум клавишами +/-
-        if arcade.key.EQUAL in self._keys or arcade.key.PLUS in self._keys:
-            new_zoom = self._cam.zoom * (1.0 + _ZOOM_STEP * delta_time * 5)
-            self._cam.zoom = min(_MAX_ZOOM, new_zoom)
-        if arcade.key.MINUS in self._keys:
-            new_zoom = self._cam.zoom / (1.0 + _ZOOM_STEP * delta_time * 5)
-            self._cam.zoom = max(_MIN_ZOOM, new_zoom)
-
-        # Сдвиг цели
-        self._target_x += dx
-        self._target_y += dy
-
-        # Не выходим за границы мира
         half_w = self._view_width / 2.0
         half_h = self._view_height / 2.0
         self._target_x = max(
-            half_w, min(self._world_px_w - half_w, self._target_x)
+            half_w, min(self._world_px_w - half_w, world_x)
         )
         self._target_y = max(
-            half_h, min(self._world_px_h - half_h, self._target_y)
+            half_h, min(self._world_px_h - half_h, world_y)
+        )
+        self._cam.position = (self._target_x, self._target_y)
+
+    def follow(self, world_x: float, world_y: float) -> None:
+        """Устанавливает цель следования за объектом.
+
+        Камера плавно перемещается к указанной позиции,
+        но не выходит за границы мира.
+
+        Args:
+            world_x: X-координата цели в пикселях мира.
+            world_y: Y-координата цели в пикселях мира.
+        """
+        half_w = self._view_width / 2.0
+        half_h = self._view_height / 2.0
+        self._target_x = max(
+            half_w, min(self._world_px_w - half_w, world_x)
+        )
+        self._target_y = max(
+            half_h, min(self._world_px_h - half_h, world_y)
         )
 
-        # Плавное перемещение
+    # ================================================================
+    # Обновление
+    # ================================================================
+
+    def update(self, delta_time: float, input_mgr: InputManager) -> None:
+        """Обновляет позицию камеры.
+
+        Плавно перемещает камеру к целевой позиции.
+        Зум через InputManager (клавиши +/-, триггеры геймпада).
+
+        Args:
+            delta_time: Время с прошлого кадра (сек).
+            input_mgr: Менеджер ввода (клавиатура + геймпад).
+        """
+        from src.engine.input_manager import Action
+
+        # Зум через InputManager
+        if input_mgr.is_pressed(Action.ZOOM_IN):
+            new_zoom = self._cam.zoom * (
+                1.0 + _ZOOM_STEP * delta_time * 5
+            )
+            self._cam.zoom = min(_MAX_ZOOM, new_zoom)
+        if input_mgr.is_pressed(Action.ZOOM_OUT):
+            new_zoom = self._cam.zoom / (
+                1.0 + _ZOOM_STEP * delta_time * 5
+            )
+            self._cam.zoom = max(_MIN_ZOOM, new_zoom)
+
+        # Плавное перемещение к цели
         lerp = 1.0 - pow(_LERP_SMOOTHING, delta_time * 60.0)
         pos = self._cam.position
         cam_x = float(pos[0]) + (self._target_x - float(pos[0])) * lerp
@@ -173,6 +189,17 @@ class GameCamera:
         result = self._window.height / self._cam.zoom
         return result  # type: ignore[no-any-return]
 
+    @property
+    def zoom(self) -> float:
+        """Текущий зум камеры."""
+        return float(self._cam.zoom)
+
+    @property
+    def position(self) -> tuple[float, float]:
+        """Текущая позиция камеры (center_x, center_y)."""
+        pos = self._cam.position
+        return (float(pos[0]), float(pos[1]))
+
     def visible_tile_bounds(
         self,
     ) -> tuple[int, int, int, int]:
@@ -205,11 +232,16 @@ class GameCamera:
 
         return left, ty_top, right, ty_bottom
 
-    def visible_chunks(self, chunk_size: int) -> set[tuple[int, int]]:
-        """Координаты видимых чанков.
+    def visible_chunks(
+        self, chunk_size: int, margin: int = 5
+    ) -> set[tuple[int, int]]:
+        """Координаты видимых чанков с буфером.
 
         Args:
             chunk_size: Размер чанка в тайлах.
+            margin: Кол-во дополнительных чанков за краем видимой
+                области (предзагрузка, чтобы избежать провалов FPS
+                при прокрутке).
 
         Returns:
             Множество кортежей (cx, cy).
@@ -219,6 +251,12 @@ class GameCamera:
         cx_max = right // chunk_size
         cy_min = ty_top // chunk_size
         cy_max = ty_bottom // chunk_size
+
+        # Расширяем на margin чанков в каждую сторону
+        cx_min = max(0, cx_min - margin)
+        cx_max = cx_max + margin
+        cy_min = max(0, cy_min - margin)
+        cy_max = cy_max + margin
 
         return {
             (cx, cy)
