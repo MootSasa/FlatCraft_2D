@@ -1,0 +1,5 @@
+# Core project dependencies
+arcade>=2.6.17
+perlin-noise>=1.12
+numpy>=1.26.0
+pydantic>=2.6.0
