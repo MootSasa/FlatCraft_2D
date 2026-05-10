@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 import numpy as np
 from scipy.ndimage import (
@@ -35,6 +36,7 @@ from scipy.ndimage import (
 )
 
 from src.utils.noise import FractalNoiseGenerator, NoiseParams
+from src.world.autotiler import compute_autotile_map
 from src.world.models import Biome, Chunk, Tile, World, WorldGenerationError
 
 
@@ -69,7 +71,7 @@ class GenerationConfig:
     seed: int = 42
     width: int = 1000
     height: int = 1000
-    chunk_size: int = 64
+    chunk_size: int = 16
     sea_level: float = 0.4
     deep_ocean_distance: float = 20.0
     gaussian_sigma: float = 0.8
@@ -187,8 +189,15 @@ class WorldGenerator:
         """Текущие настройки генератора."""
         return self._config
 
-    def generate(self) -> World:
+    def generate(
+        self,
+        on_progress: Callable[[float, str], None] | None = None,
+    ) -> World:
         """Генерирует мир по текущим настройкам.
+
+        Args:
+            on_progress: Показатель прогресса (progress 0..1, step_name).
+                         Вызывается перед каждым этапом генерации.
 
         Returns:
             Объект World со сгенерированными чанками и картами.
@@ -199,9 +208,13 @@ class WorldGenerator:
         cfg = self._config
 
         # ЭТАП 1: Форма мира (континенты и океаны)
+        if on_progress:
+            on_progress(0.0, "Генерируем мир...")
         elevation_map, land_mask = self._generate_land_shape(cfg)
 
         # ЭТАП 2: Биомы суши
+        if on_progress:
+            on_progress(0.25, "Формируем биомы...")
         temperature_map, moisture_map = self._generate_climate_maps(
             cfg, elevation_map, land_mask
         )
@@ -210,15 +223,25 @@ class WorldGenerator:
         )
 
         # ЭТАП 3: Водные детали
+        if on_progress:
+            on_progress(0.5, "Разливаем воду...")
         biome_map = self._generate_water_features(
             biome_map, land_mask, elevation_map, temperature_map, cfg
         )
 
-        # ЭТАП 4: Очистка и сборка
+        # ЭТАП 4: Очистка и автотайлинг
+        if on_progress:
+            on_progress(0.75, "Полируем детали...")
         if cfg.min_biome_size > 1:
             biome_map = self._remove_small_biome_patches(
                 biome_map, cfg.min_biome_size
             )
+
+        autotile_map = compute_autotile_map(biome_map)
+
+        # ЭТАП 5: Построение чанков
+        if on_progress:
+            on_progress(0.9, "Расставляем чанки...")
 
         world = World(
             seed=cfg.seed,
@@ -232,8 +255,16 @@ class WorldGenerator:
         )
 
         self._build_chunks(
-            world, biome_map, elevation_map, temperature_map, moisture_map
+            world,
+            biome_map,
+            elevation_map,
+            temperature_map,
+            moisture_map,
+            autotile_map,
         )
+
+        if on_progress:
+            on_progress(1.0, "Готово!")
 
         return world
 
@@ -709,6 +740,7 @@ class WorldGenerator:
         elevation: np.ndarray,
         temperature: np.ndarray,
         moisture: np.ndarray,
+        autotile_map: np.ndarray,
     ) -> None:
         """Разбивает матрицу биомов на чанки и заполняет world.chunks.
 
@@ -718,6 +750,7 @@ class WorldGenerator:
             elevation: 2D-массив высот.
             temperature: 2D-массив температур.
             moisture: 2D-массив влажности.
+            autotile_map: 2D-массив масок автотайлинга.
         """
         cs = world.chunk_size
         chunks_x = world.chunks_x
@@ -734,6 +767,7 @@ class WorldGenerator:
                 elev_slice = elevation[y_start:y_end, x_start:x_end]
                 temp_slice = temperature[y_start:y_end, x_start:x_end]
                 moist_slice = moisture[y_start:y_end, x_start:x_end]
+                auto_slice = autotile_map[y_start:y_end, x_start:x_end]
 
                 chunk_height, chunk_width = biome_slice.shape
                 tiles = np.empty((chunk_height, chunk_width), dtype=object)
@@ -745,6 +779,7 @@ class WorldGenerator:
                             temperature=float(temp_slice[ly, lx]),
                             moisture=float(moist_slice[ly, lx]),
                             elevation=float(elev_slice[ly, lx]),
+                            autotile_mask=int(auto_slice[ly, lx]),
                         )
 
                 chunk = Chunk(x=cx, y=cy, tiles=tiles)
