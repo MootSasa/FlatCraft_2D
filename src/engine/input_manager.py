@@ -527,11 +527,11 @@ class InputManager:
             action: Игровое действие.
 
         Returns:
-            Строка вида "W / ^" или "не назначено".
+            Строка вида "W / ^" или "Не назначено".
         """
         keys = self.key_bindings.bindings.get(action, [])
         if not keys:
-            return "не назначено"
+            return "Не назначено"
         return " / ".join(_key_name(k) for k in keys)
 
     def get_gamepad_binding_text(self, action: Action) -> str:
@@ -541,11 +541,11 @@ class InputManager:
             action: Игровое действие.
 
         Returns:
-            Строка вида "L-Stick ^" или "не назначено".
+            Строка вида "L-Stick ^" или "Не назначено".
         """
         binding = self.gamepad_bindings.bindings.get(action)
         if binding is None:
-            return "не назначено"
+            return "Не назначено"
         return _gamepad_binding_label(binding)
 
     # ================================================================
