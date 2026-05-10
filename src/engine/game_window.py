@@ -373,7 +373,7 @@ class FlatCraftWindow(arcade.Window):
             self._loading_screen.update(delta_time)
 
             # Инициализация подсистем сразу после генерации (до CAT_FALL).
-            # Предзагрузка чанков распределяется по кадрам, 
+            # Предзагрузка чанков распределяется по кадрам,
             # чтобы не блокировать основной поток.
             if (
                 self._loading_screen.is_world_ready()

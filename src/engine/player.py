@@ -253,7 +253,10 @@ class Player:
             if self._step_fade <= 0:
                 # Затухание завершено - остановить звук
                 self._step_fade = 0.0
-                if self._step_player is not None and self._step_type is not None:
+                if (
+                    self._step_player is not None
+                    and self._step_type is not None
+                ):
                     sound = self._step_sounds.get(self._step_type)
                     if sound is not None:
                         try:
