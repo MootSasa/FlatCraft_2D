@@ -8,13 +8,15 @@ from __future__ import annotations
 import logging
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
+_PyinstrumentProfiler: Any = None
 try:
-    from pyinstrument import Profiler as _PyinstrumentProfiler
+    from pyinstrument import (  # type: ignore[misc, no-redef]
+        Profiler as _PyinstrumentProfiler,
+    )
     _HAS_PYINSTRUMENT = True
 except ImportError:
-    _PyinstrumentProfiler = None
     _HAS_PYINSTRUMENT = False
 
 logger = logging.getLogger(__name__)
