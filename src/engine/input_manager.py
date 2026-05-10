@@ -61,7 +61,7 @@ ACTION_LABELS: dict[Action, str] = {
     Action.RUN: "Бег",
     Action.ZOOM_IN: "Приблизить",
     Action.ZOOM_OUT: "Отдалить",
-    Action.MENU: "Меню",
+    Action.MENU: "Меню (Esc / Start)",
     Action.TOGGLE_PERF: "Монитор производительности (F3)",
     Action.TOGGLE_PROFILER: "Профилировщик (F4)",
 }
@@ -102,8 +102,7 @@ class KeyBindings:
             Action.RUN: [arcade.key.LSHIFT, arcade.key.RSHIFT],
             Action.ZOOM_IN: [arcade.key.EQUAL, arcade.key.NUM_ADD],
             Action.ZOOM_OUT: [arcade.key.MINUS, arcade.key.NUM_SUBTRACT],
-            # Action.MENU используется только для геймпада (Start).
-            Action.MENU: [],
+            Action.MENU: [arcade.key.ESCAPE],
             Action.TOGGLE_PERF: [arcade.key.F3],
             Action.TOGGLE_PROFILER: [arcade.key.F4],
         })
@@ -286,7 +285,6 @@ class InputManager:
             self._keys_just_pressed.copy()
         )
         self._keys_just_pressed.clear()
-        self._prev_gamepad_buttons = self._read_gamepad_buttons()
 
         # Проверяем подключение новых контроллеров
         if self._controller is None and self._controller_manager is not None:
@@ -300,6 +298,9 @@ class InputManager:
                     )
             except Exception:
                 pass
+
+        # Сохраняем текущее состояние кнопок для next frame
+        self._prev_gamepad_buttons = self._read_gamepad_buttons()
 
     # ================================================================
     # Запрос состояния - движение
