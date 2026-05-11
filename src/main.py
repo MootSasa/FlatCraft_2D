@@ -6,9 +6,9 @@
 
 Использование::
     linux: python3 -m src.main
-        [--seed SEED] [--width W] [--height H] [--tile-size TS]
+        [--seed SEED] [--width W] [--height H]
     windows: python.exe -m src.main
-        [--seed SEED] [--width W] [--height H] [--tile-size TS]
+        [--seed SEED] [--width W] [--height H]
 """
 
 from __future__ import annotations
@@ -45,10 +45,25 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _get_base_dir() -> str:
+    """Определяет базовую директорию с ``assets/``."""
+    candidates: list[str] = []
+    if getattr(sys, "frozen", False):
+        candidates.append(os.path.dirname(sys.executable))
+        if __file__:
+            candidates.append(os.path.dirname(os.path.abspath(__file__)))
+    else:
+        if __file__:
+            candidates.append(os.path.dirname(os.path.abspath(__file__)))
+    for d in candidates:
+        if os.path.isdir(os.path.join(d, "assets")):
+            return d
+    return os.getcwd()
+
+
 def main() -> None:
     """Запускает окно с экраном загрузки."""
-    if getattr(sys, 'frozen', False):
-        os.chdir(os.path.dirname(sys.executable))
+    os.chdir(_get_base_dir())
 
     arcade.load_font("assets/fonts/JetBrainsMono-Regular.ttf")
     arcade.load_font("assets/fonts/JetBrainsMono-Bold.ttf")
