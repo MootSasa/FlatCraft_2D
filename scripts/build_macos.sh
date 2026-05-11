@@ -3,7 +3,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 python3 -m nuitka \
-  --onefile \
   --macos-create-app-bundle \
   --output-filename=flatcraft \
   --include-package=src \
