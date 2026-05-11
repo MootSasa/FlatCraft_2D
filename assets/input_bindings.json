@@ -28,7 +28,9 @@
       45,
       65453
     ],
-    "MENU": [65307],
+    "MENU": [
+      65307
+    ],
     "TOGGLE_PERF": [
       65472
     ],
@@ -41,10 +43,10 @@
     "MOVE_DOWN": "lefty+",
     "MOVE_LEFT": "leftx-",
     "MOVE_RIGHT": "leftx+",
-    "RUN": "leftx-",
+    "RUN": "a",
     "ZOOM_IN": "righttrigger",
     "ZOOM_OUT": "lefttrigger",
-    "MENU": "start",
-    "TOGGLE_PERF": "back"
+    "MENU": "y",
+    "TOGGLE_PERF": "x"
   }
 }
