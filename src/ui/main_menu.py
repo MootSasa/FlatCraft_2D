@@ -218,7 +218,7 @@ class MainMenu:
             height=20,
         )
 
-        @self._sea_slider.event
+        @self._sea_slider.event("on_change")
         def on_sea_change(event: gui.UIOnChangeEvent) -> None:
             if self._sea_label is not None and self._sea_slider is not None:
                 self._sea_label.text = (
@@ -260,7 +260,7 @@ class MainMenu:
             height=20,
         )
 
-        @self._freq_slider.event
+        @self._freq_slider.event("on_change")
         def on_freq_change(event: gui.UIOnChangeEvent) -> None:
             if self._freq_label is not None and self._freq_slider is not None:
                 real_freq = self._freq_slider.value / 1000.0
