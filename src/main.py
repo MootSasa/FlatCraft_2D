@@ -14,8 +14,10 @@
 from __future__ import annotations
 
 import argparse
+import multiprocessing
 import os
 import sys
+from pathlib import Path
 
 import arcade
 
@@ -45,25 +47,27 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _get_base_dir() -> str:
-    """Определяет базовую директорию с ``assets/``."""
-    candidates: list[str] = []
+def _get_base_dir() -> Path:
+    """Определяет путь к корню проекта."""
     if getattr(sys, "frozen", False):
-        candidates.append(os.path.dirname(sys.executable))
-        if __file__:
-            candidates.append(os.path.dirname(os.path.abspath(__file__)))
-    else:
-        if __file__:
-            candidates.append(os.path.dirname(os.path.abspath(__file__)))
-    for d in candidates:
-        if os.path.isdir(os.path.join(d, "assets")):
-            return d
-    return os.getcwd()
+        bundle_dir = Path(__file__).resolve().parent
+
+        if (bundle_dir / "assets").exists():
+            return bundle_dir
+
+        exe_dir = Path(sys.executable).parent
+        return exe_dir
+
+    current_dir = Path(__file__).resolve().parent
+    if current_dir.name == "src":
+        return current_dir.parent
+
+    return current_dir
 
 
 def main() -> None:
     """Запускает окно с экраном загрузки."""
-    os.chdir(_get_base_dir())
+    os.chdir(str(_get_base_dir()))
 
     arcade.load_font("assets/fonts/JetBrainsMono-Regular.ttf")
     arcade.load_font("assets/fonts/JetBrainsMono-Bold.ttf")
@@ -81,4 +85,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     main()
