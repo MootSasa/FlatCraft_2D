@@ -1,6 +1,10 @@
-# FlatCraft
+<div align="center">
+<img src="assets/icons/flatcraft.png" alt="Logo">
 
-2D-песочница с видом сверху и процедурной генерацией мира на базе фрактального шума Перлина.
+<h3 align="center">
+FlatCraft — это 2D-песочница с видом сверху и процедурной генерацией мира на базе фрактального шума Перлина.
+</h3>
+</div>
 
 **Документация API:** https://mootsasa.github.io/FlatCraft_2D/
 
