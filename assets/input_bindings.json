@@ -47,6 +47,7 @@
     "ZOOM_IN": "righttrigger",
     "ZOOM_OUT": "lefttrigger",
     "MENU": "y",
-    "TOGGLE_PERF": "x"
+    "TOGGLE_PERF": "x",
+    "TOGGLE_PROFILER": "b"
   }
 }

@@ -490,11 +490,14 @@ class FlatCraftWindow(arcade.Window):
         if self._loading_screen is not None:
             return
 
-        # Все клавиши передаются в InputManager (включая ESC)
+        # Все клавиши передаются в InputManager
         self._input.handle_key_press(key)
 
-        # Любая клавиша сбрасывает подтверждение выхода
-        if self._escape_pending and key != arcade.key.ESCAPE:
+        # Любая клавиша, кроме MENU, сбрасывает подтверждение
+        menu_keys = self._input.key_bindings.bindings.get(
+            Action.MENU, []
+        )
+        if self._escape_pending and key not in menu_keys:
             self._escape_pending = False
 
     def on_key_release(self, key: int, modifiers: int) -> None:
@@ -506,7 +509,13 @@ class FlatCraftWindow(arcade.Window):
         self._input.handle_key_release(key)
 
     def _handle_menu_action(self) -> None:
-        """Обрабатывает действие MENU (Esc / Start)."""
+        """Обрабатывает действие MENU (назад)."""
+        btn = self._input.get_key_binding_text(Action.MENU)
+        gp = self._input.get_gamepad_binding_text(Action.MENU)
+        label = btn
+        if gp and gp != "Не назначено":
+            label = f"{btn} / {gp}"
+
         if self._escape_pending:
             self._escape_pending = False
             if self._main_menu.visible:
@@ -518,12 +527,12 @@ class FlatCraftWindow(arcade.Window):
             self._escape_timer = self._escape_timeout
             if self._main_menu.visible:
                 self._escape_msg.text = (
-                    "Нажмите Esc / Start ещё раз "
+                    f"Нажмите {label} ещё раз "
                     "для выхода"
                 )
             else:
                 self._escape_msg.text = (
-                    "Нажмите Esc / Start ещё раз "
+                    f"Нажмите {label} ещё раз "
                     "для возврата в меню"
                 )
 

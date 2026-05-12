@@ -61,7 +61,7 @@ ACTION_LABELS: dict[Action, str] = {
     Action.RUN: "Бег",
     Action.ZOOM_IN: "Приблизить",
     Action.ZOOM_OUT: "Отдалить",
-    Action.MENU: "Меню (Esc / Start)",
+    Action.MENU: "Меню / Назад",
     Action.TOGGLE_PERF: "Монитор производительности (F3)",
     Action.TOGGLE_PROFILER: "Профилировщик (F4)",
 }
@@ -208,6 +208,7 @@ class InputManager:
         self._controller: Any = None
         self._controller_manager: Any = None
         self._prev_gamepad_buttons: set[str] = set()
+        self._prev_gamepad_buttons_snap: set[str] = set()
 
         # Привязки
         self.key_bindings: KeyBindings = KeyBindings.defaults()
@@ -299,6 +300,10 @@ class InputManager:
             except Exception:
                 pass
 
+        # Снимок предыдущего кадра для just_pressed
+        self._prev_gamepad_buttons_snap = (
+            self._prev_gamepad_buttons.copy()
+        )
         # Сохраняем текущее состояние кнопок для next frame
         self._prev_gamepad_buttons = self._read_gamepad_buttons()
 
@@ -475,14 +480,12 @@ class InputManager:
             return
 
         # Клавиши
-        _ESCAPE_KEY = 65307
         for action_name, keys in data.get("keys", {}).items():
             try:
                 action = Action[action_name]
                 if isinstance(keys, list):
                     self.key_bindings.bindings[action] = [
                         int(k) for k in keys
-                        if int(k) != _ESCAPE_KEY
                     ]
             except (KeyError, ValueError):
                 pass
@@ -634,16 +637,15 @@ class InputManager:
         return binding in current_buttons
 
     def _was_gamepad_action_active(self, action: Action) -> bool:
-        """Проверяет, было ли действие активно на геймпаде в прошлом кадре."""
+        """Проверяет, было ли действие на геймпаде."""
         binding = self.gamepad_bindings.bindings.get(action)
         if binding is None:
             return False
 
-        # Для осей не отслеживаем just_pressed, так как они аналоговые
         if binding.endswith("+") or binding.endswith("-"):
             return self._is_gamepad_action_active(action)
 
-        return binding in self._prev_gamepad_buttons
+        return binding in self._prev_gamepad_buttons_snap
 
     def _check_axis_binding(self, binding: str) -> bool:
         """Проверяет, активна ли привязка оси геймпада.
@@ -690,7 +692,7 @@ class InputManager:
 
         # Проверяем кнопки
         current = self._read_gamepad_buttons()
-        newly_pressed = current - self._prev_gamepad_buttons
+        newly_pressed = current - self._prev_gamepad_buttons_snap
 
         if newly_pressed:
             button = next(iter(newly_pressed))
